@@ -2,7 +2,7 @@
     {
         "Name": "chromium_third_party_harfbuzz_ng",                   # 上游开源软件名全称
         "License": "Behdad Esfahbod","Keith Packard"        # 上游开源软件中包含的许可证信息
-        "License File": "LICENSE", "Behdad Esfahbod","Keith Packard"      # 许可证所在文件路径
+        "License File": "LICENSE",      # 许可证所在文件路径
         "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
         "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",   # 上游软件包发布地址
         "Description": "第三方软件harfbuzz-ng"           # 开源软件功能描述
