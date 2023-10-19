@@ -87,8 +87,8 @@ used to filter file path.
                 <filteritem type="filename" name="*.ttc" desc="chromium原生二进制文件,不会使用" />
             </filefilter>
             <filefilter name="defaultFilter" desc="File is not used">
-                <filteritem type="filepath" name="m4/ax_check_link_flag.m4" desc="GPL-3.0-or-later禁止使用" />
-                <filteritem type="filepath" name="m4/ax_pthread.m4" desc="GPL-3.0-or-later禁止使用" />
+                <filteritem type="filepath" name="m4/ax_check_link_flag.m4" desc="该文件涉及GPL-3.0-or-later,经确认不会使用" />
+                <filteritem type="filepath" name="m4/ax_pthread.m4" desc="该文件涉及GPL-3.0-or-later,经确认不会使用" />
             </filefilter>
         </filefilterlist>
         <licensematcherlist>
