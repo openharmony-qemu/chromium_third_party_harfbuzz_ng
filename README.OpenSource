@@ -1,58 +1,11 @@
 [
     {
-        "Name": "harfbuzz",                   # 上游开源软件名全称
-        "License": "GPL-3.0-or-later"       # 上游开源软件中包含的许可证信息
-        "License File": "COPYING"      # 许可证所在文件路径
+        "Name": "harfbuzz",
+        "License": "GPL-3.0-or-later",
+        "License File": "COPYING",
         "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
-        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",   # 上游软件包发布地址
-        "Description": "第三方软件harfbuzz-ng"           # 开源软件功能描述
-    },
-    {
-        "Name": "harfbuzz",                   # 上游开源软件名全称
-        "License":"LGPLStyleLicense"       # 上游开源软件中包含的许可证信息
-        "License File": "COPYING"      # 许可证所在文件路径
-        "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
-        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",   # 上游软件包发布地址
-        "Description": "第三方软件harfbuzz-ng"           # 开源软件功能描述
-    },
-    {
-        "Name": "harfbuzz",                   # 上游开源软件名全称
-        "License": "OFL-1.1-no-RFN"        # 上游开源软件中包含的许可证信息
-        "License File": "COPYING"      # 许可证所在文件路径
-        "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
-        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",   # 上游软件包发布地址
-        "Description": "第三方软件harfbuzz-ng"           # 开源软件功能描述
-    },
-    {
-        "Name": "harfbuzz",                   # 上游开源软件名全称
-        "License": "CC-BY-NC-SA-3.0"        # 上游开源软件中包含的许可证信息
-        "License File": "COPYING"      # 许可证所在文件路径
-        "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
-        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",   # 上游软件包发布地址
-        "Description": "第三方软件harfbuzz-ng"           # 开源软件功能描述
-    },
-    {
-        "Name": "harfbuzz",                   # 上游开源软件名全称
-        "License": "MIT License 1998"       # 上游开源软件中包含的许可证信息
-        "License File": "COPYING"      # 许可证所在文件路径
-        "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
-        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",   # 上游软件包发布地址
-        "Description": "第三方软件harfbuzz-ng"           # 开源软件功能描述
-    },
-    {
-        "Name": "harfbuzz",                   # 上游开源软件名全称
-        "License": "FSFAP"       # 上游开源软件中包含的许可证信息
-        "License File": "COPYING"      # 许可证所在文件路径
-        "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
-        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",   # 上游软件包发布地址
-        "Description": "第三方软件harfbuzz-ng"           # 开源软件功能描述
-    },
-    {
-        "Name": "harfbuzz",                   # 上游开源软件名全称
-        "License": "CC-BY-NC-SA-3.0"        # 上游开源软件中包含的许可证信息
-        "License File": "COPYING"      # 许可证所在文件路径
-        "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
-        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",   # 上游软件包发布地址
-        "Description": "第三方软件harfbuzz-ng"           # 开源软件功能描述
+        "Owner": "huangjiewen2@huawei.com",
+        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",
+        "Description": "第三方软件harfbuzz-ng,可以进行文本整形,提高文本渲染的质量和多样性"
     }
 ]
