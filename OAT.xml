@@ -64,9 +64,7 @@ used to filter file path.
         <policylist>
             <policy name="projectPolicy" desc="">
                 <policyitem type="compatibility" name="LGPLStyleLicense" path="m4/ax_code_coverage.m4" desc="经法务确认,涉及文件在render下进行了隔离" />
-                <policyitem type="compatibility" name="OFL-1.1-no-RFN" path="test/shape/data/in-house/COPYING" desc="经法务确认经法务确认为宽松型许可证" />
                 <policyitem type="compatibility" name="OFL-1.1-no-RFN" path="test/COPYING" desc="经法务确认经法务确认为宽松型许可证" />
-                <policyitem type="compatibility" name="CC-BY-NC-SA-3.0" path="test/shape/texts/in-house/shaper-arabic/script-arabic/language-urdu/crulp/ligatures/LICENSE" desc="经法务确认经法务确认为宽松型许可证" />
             </policy>
         </policylist>
         <filefilterlist>

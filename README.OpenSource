@@ -1,7 +1,7 @@
 [
     {
         "Name": "harfbuzz",
-        "License": "GPL-3.0-or-later",
+        "License": "MIT-Modern-Variant",
         "License File": "COPYING",
         "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
         "Owner": "huangjiewen2@huawei.com",
