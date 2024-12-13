@@ -1,0 +1,11 @@
+[
+    {
+        "Name": "harfbuzz",
+        "License": "MIT-Modern-Variant",
+        "License File": "COPYING",
+        "Version Number": "0acf466c44143de2e9b9cc0375cb25ec67cb132f",
+        "Owner": "huangjiewen2@huawei.com",
+        "Upstream URL": "https://chromium.googlesource.com/external/github.com/harfbuzz/harfbuzz.git@0acf466c44143de2e9b9cc0375cb25ec67cb132f",
+        "Description": "第三方软件harfbuzz-ng,可以进行文本整形,提高文本渲染的质量和多样性"
+    }
+]
