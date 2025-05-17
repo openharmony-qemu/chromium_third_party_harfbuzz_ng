@@ -1,496 +1,1037 @@
-project('harfbuzz', 'c', 'cpp',
-  meson_version: '>= 0.55.0',
-  version: '8.5.0',
-  default_options: [
-    'cpp_eh=none',          # Just to support msvc, we are passing -fno-exceptions also anyway
-    # 'cpp_rtti=false',     # Do NOT enable, wraps inherit it and ICU needs RTTI
-    'cpp_std=c++11',
-    'wrap_mode=nofallback', # Use --wrap-mode=default to revert, https://github.com/harfbuzz/harfbuzz/pull/2548
-  ],
+fs = import('fs')
+
+hb_version_h = configure_file(
+               command: [find_program('gen-hb-version.py'), meson.project_version(), '@OUTPUT@', '@INPUT@'],
+               input: 'hb-version.h.in',
+               output: 'hb-version.h',
+               install: true,
+               install_dir: get_option('includedir') / meson.project_name())
+
+# Base and default-included sources and headers
+hb_base_sources = files(
+  'hb-aat-layout-ankr-table.hh',
+  'hb-aat-layout-bsln-table.hh',
+  'hb-aat-layout-common.hh',
+  'hb-aat-layout-feat-table.hh',
+  'hb-aat-layout-just-table.hh',
+  'hb-aat-layout-kerx-table.hh',
+  'hb-aat-layout-morx-table.hh',
+  'hb-aat-layout-opbd-table.hh',
+  'hb-aat-layout-trak-table.hh',
+  'hb-aat-layout.cc',
+  'hb-aat-layout.hh',
+  'hb-aat-ltag-table.hh',
+  'hb-aat-map.cc',
+  'hb-aat-map.hh',
+  'hb-algs.hh',
+  'hb-array.hh',
+  'hb-atomic.hh',
+  'hb-bimap.hh',
+  'hb-bit-page.hh',
+  'hb-blob.cc',
+  'hb-blob.hh',
+  'hb-buffer-serialize.cc',
+  'hb-buffer-verify.cc',
+  'hb-buffer.cc',
+  'hb-buffer.hh',
+  'hb-cache.hh',
+  'hb-cff-interp-common.hh',
+  'hb-cff-interp-cs-common.hh',
+  'hb-cff-interp-dict-common.hh',
+  'hb-cff1-interp-cs.hh',
+  'hb-cff2-interp-cs.hh',
+  'hb-common.cc',
+  'hb-config.hh',
+  'hb-debug.hh',
+  'hb-dispatch.hh',
+  'hb-draw.cc',
+  'hb-draw.hh',
+  'hb-paint.cc',
+  'hb-paint.hh',
+  'hb-paint-extents.cc',
+  'hb-paint-extents.hh',
+  'hb-face.cc',
+  'hb-face.hh',
+  'hb-face-builder.cc',
+  'hb-fallback-shape.cc',
+  'hb-font.cc',
+  'hb-font.hh',
+  'hb-iter.hh',
+  'hb-kern.hh',
+  'hb-limits.hh',
+  'hb-machinery.hh',
+  'hb-map.cc',
+  'hb-map.hh',
+  'hb-meta.hh',
+  'hb-ms-feature-ranges.hh',
+  'hb-multimap.hh',
+  'hb-mutex.hh',
+  'hb-null.hh',
+  'hb-number.cc',
+  'hb-number.hh',
+  'hb-object.hh',
+  'hb-open-file.hh',
+  'hb-open-type.hh',
+  'hb-ot-cff-common.hh',
+  'hb-ot-cff1-std-str.hh',
+  'hb-ot-cff1-table.cc',
+  'hb-ot-cff1-table.hh',
+  'hb-ot-cff2-table.cc',
+  'hb-ot-cff2-table.hh',
+  'hb-ot-cmap-table.hh',
+  'hb-ot-color.cc',
+  'hb-ot-face-table-list.hh',
+  'hb-ot-face.cc',
+  'hb-ot-face.hh',
+  'hb-ot-font.cc',
+  'hb-ot-gasp-table.hh',
+  'hb-ot-glyf-table.hh',
+  'hb-ot-hdmx-table.hh',
+  'hb-ot-head-table.hh',
+  'hb-ot-hhea-table.hh',
+  'hb-ot-hmtx-table.hh',
+  'hb-ot-kern-table.hh',
+  'hb-ot-layout-base-table.hh',
+  'hb-ot-layout-common.hh',
+  'hb-ot-layout-gdef-table.hh',
+  'hb-ot-layout-gpos-table.hh',
+  'hb-ot-layout-gsub-table.hh',
+  'hb-outline.hh',
+  'hb-outline.cc',
+  'OT/Color/CBDT/CBDT.hh',
+  'OT/Color/COLR/COLR.hh',
+  'OT/Color/CPAL/CPAL.hh',
+  'OT/Color/sbix/sbix.hh',
+  'OT/Color/svg/svg.hh',
+  'OT/glyf/glyf.hh',
+  'OT/glyf/glyf-helpers.hh',
+  'OT/glyf/loca.hh',
+  'OT/glyf/path-builder.hh',
+  'OT/glyf/Glyph.hh',
+  'OT/glyf/GlyphHeader.hh',
+  'OT/glyf/SimpleGlyph.hh',
+  'OT/glyf/CompositeGlyph.hh',
+  'OT/glyf/SubsetGlyph.hh',
+  'OT/Layout/types.hh',
+  'OT/Layout/Common/Coverage.hh',
+  'OT/Layout/Common/CoverageFormat1.hh',
+  'OT/Layout/Common/CoverageFormat2.hh',
+  'OT/Layout/Common/RangeRecord.hh',
+  'OT/Layout/GDEF/GDEF.hh',
+  'OT/Layout/GPOS/AnchorFormat1.hh',
+  'OT/Layout/GPOS/AnchorFormat2.hh',
+  'OT/Layout/GPOS/AnchorFormat3.hh',
+  'OT/Layout/GPOS/Anchor.hh',
+  'OT/Layout/GPOS/AnchorMatrix.hh',
+  'OT/Layout/GPOS/ChainContextPos.hh',
+  'OT/Layout/GPOS/Common.hh',
+  'OT/Layout/GPOS/ContextPos.hh',
+  'OT/Layout/GPOS/CursivePosFormat1.hh',
+  'OT/Layout/GPOS/CursivePos.hh',
+  'OT/Layout/GPOS/ExtensionPos.hh',
+  'OT/Layout/GPOS/GPOS.hh',
+  'OT/Layout/GPOS/LigatureArray.hh',
+  'OT/Layout/GPOS/MarkArray.hh',
+  'OT/Layout/GPOS/MarkBasePosFormat1.hh',
+  'OT/Layout/GPOS/MarkBasePos.hh',
+  'OT/Layout/GPOS/MarkLigPosFormat1.hh',
+  'OT/Layout/GPOS/MarkLigPos.hh',
+  'OT/Layout/GPOS/MarkMarkPosFormat1.hh',
+  'OT/Layout/GPOS/MarkMarkPos.hh',
+  'OT/Layout/GPOS/MarkRecord.hh',
+  'OT/Layout/GPOS/PairPosFormat1.hh',
+  'OT/Layout/GPOS/PairPosFormat2.hh',
+  'OT/Layout/GPOS/PairPos.hh',
+  'OT/Layout/GPOS/PairSet.hh',
+  'OT/Layout/GPOS/PairValueRecord.hh',
+  'OT/Layout/GPOS/PosLookup.hh',
+  'OT/Layout/GPOS/PosLookupSubTable.hh',
+  'OT/Layout/GPOS/SinglePosFormat1.hh',
+  'OT/Layout/GPOS/SinglePosFormat2.hh',
+  'OT/Layout/GPOS/SinglePos.hh',
+  'OT/Layout/GPOS/ValueFormat.hh',
+  'OT/Layout/GSUB/AlternateSet.hh',
+  'OT/Layout/GSUB/AlternateSubstFormat1.hh',
+  'OT/Layout/GSUB/AlternateSubst.hh',
+  'OT/Layout/GSUB/ChainContextSubst.hh',
+  'OT/Layout/GSUB/Common.hh',
+  'OT/Layout/GSUB/ContextSubst.hh',
+  'OT/Layout/GSUB/ExtensionSubst.hh',
+  'OT/Layout/GSUB/GSUB.hh',
+  'OT/Layout/GSUB/Ligature.hh',
+  'OT/Layout/GSUB/LigatureSet.hh',
+  'OT/Layout/GSUB/LigatureSubstFormat1.hh',
+  'OT/Layout/GSUB/LigatureSubst.hh',
+  'OT/Layout/GSUB/MultipleSubstFormat1.hh',
+  'OT/Layout/GSUB/MultipleSubst.hh',
+  'OT/Layout/GSUB/ReverseChainSingleSubstFormat1.hh',
+  'OT/Layout/GSUB/ReverseChainSingleSubst.hh',
+  'OT/Layout/GSUB/Sequence.hh',
+  'OT/Layout/GSUB/SingleSubstFormat1.hh',
+  'OT/Layout/GSUB/SingleSubstFormat2.hh',
+  'OT/Layout/GSUB/SingleSubst.hh',
+  'OT/Layout/GSUB/SubstLookup.hh',
+  'OT/Layout/GSUB/SubstLookupSubTable.hh',
+  'OT/name/name.hh',
+  'hb-ot-layout-gsubgpos.hh',
+  'hb-ot-layout-jstf-table.hh',
+  'hb-ot-layout.cc',
+  'hb-ot-layout.hh',
+  'hb-ot-map.cc',
+  'hb-ot-map.hh',
+  'hb-ot-math-table.hh',
+  'hb-ot-math.cc',
+  'hb-ot-maxp-table.hh',
+  'hb-ot-meta-table.hh',
+  'hb-ot-meta.cc',
+  'hb-ot-metrics.cc',
+  'hb-ot-metrics.hh',
+  'hb-ot-name-language-static.hh',
+  'hb-ot-name-language.hh',
+  'hb-ot-name-table.hh',
+  'hb-ot-name.cc',
+  'hb-ot-os2-table.hh',
+  'hb-ot-os2-unicode-ranges.hh',
+  'hb-ot-post-macroman.hh',
+  'hb-ot-post-table.hh',
+  'hb-ot-shaper-arabic-fallback.hh',
+  'hb-ot-shaper-arabic-joining-list.hh',
+  'hb-ot-shaper-arabic-pua.hh',
+  'hb-ot-shaper-arabic-table.hh',
+  'hb-ot-shaper-arabic-win1256.hh',
+  'hb-ot-shaper-arabic.cc',
+  'hb-ot-shaper-arabic.hh',
+  'hb-ot-shaper-default.cc',
+  'hb-ot-shaper-hangul.cc',
+  'hb-ot-shaper-hebrew.cc',
+  'hb-ot-shaper-indic-table.cc',
+  'hb-ot-shaper-indic.cc',
+  'hb-ot-shaper-indic.hh',
+  'hb-ot-shaper-khmer.cc',
+  'hb-ot-shaper-myanmar.cc',
+  'hb-ot-shaper-syllabic.cc',
+  'hb-ot-shaper-syllabic.hh',
+  'hb-ot-shaper-thai.cc',
+  'hb-ot-shaper-use-table.hh',
+  'hb-ot-shaper-use.cc',
+  'hb-ot-shaper-vowel-constraints.cc',
+  'hb-ot-shaper-vowel-constraints.hh',
+  'hb-ot-shaper.hh',
+  'hb-ot-shape-fallback.cc',
+  'hb-ot-shape-fallback.hh',
+  'hb-ot-shape-normalize.cc',
+  'hb-ot-shape-normalize.hh',
+  'hb-ot-shape.cc',
+  'hb-ot-shape.hh',
+  'hb-ot-stat-table.hh',
+  'hb-ot-tag-table.hh',
+  'hb-ot-tag.cc',
+  'hb-ot-var-avar-table.hh',
+  'hb-ot-var-common.hh',
+  'hb-ot-var-cvar-table.hh',
+  'hb-ot-var-fvar-table.hh',
+  'hb-ot-var-gvar-table.hh',
+  'hb-ot-var-hvar-table.hh',
+  'hb-ot-var-mvar-table.hh',
+  'hb-ot-var.cc',
+  'hb-ot-vorg-table.hh',
+  'hb-pool.hh',
+  'hb-sanitize.hh',
+  'hb-serialize.hh',
+  'hb-set-digest.hh',
+  'hb-set.cc',
+  'hb-set.hh',
+  'hb-shape-plan.cc',
+  'hb-shape-plan.hh',
+  'hb-shape.cc',
+  'hb-shaper-impl.hh',
+  'hb-shaper-list.hh',
+  'hb-shaper.cc',
+  'hb-shaper.hh',
+  'hb-static.cc',
+  'hb-string-array.hh',
+  'hb-style.cc',
+  'hb-ucd-table.hh',
+  'hb-ucd.cc',
+  'hb-unicode-emoji-table.hh',
+  'hb-unicode.cc',
+  'hb-unicode.hh',
+  'hb-utf.hh',
+  'hb-vector.hh',
+  'hb.hh',
 )
 
-glib_min_version = '>= 2.30.0'
-cairo_min_version = '>= 1.10.0'
-chafa_min_version = '>= 1.6.0'
-icu_min_version = '>= 49.0'
-graphite2_min_version = '>= 1.2.0'
-freetype_min_version = '>= 12.0.6'
-
-hb_version_arr = meson.project_version().split('.')
-hb_version_major = hb_version_arr[0].to_int()
-hb_version_minor = hb_version_arr[1].to_int()
-hb_version_micro = hb_version_arr[2].to_int()
-
-# libtool versioning
-hb_version_int = 60000 + hb_version_major*100 + hb_version_minor*10 + hb_version_micro
-hb_libtool_version_info = '@0@:0:@0@'.format(hb_version_int)
-
-pkgmod = import('pkgconfig')
-cpp = meson.get_compiler('cpp')
-null_dep = dependency('', required: false)
-
-# Only perform these checks if cpp_std is c++11 as setting -std directly
-# produces a warning from meson.
-if get_option('cpp_std') == 'c++11'
-  # Enforce C++14 requirement for MSVC STL
-  if cpp.get_id() == 'clang' and cpp.get_define('_MSC_FULL_VER') != ''
-    add_project_arguments('-std=c++14', language: 'cpp')
-  elif cpp.get_id() == 'clang-cl'
-    # Clang-cl produces a warning when using -std=c++14, but not when using /std:c++14
-    add_project_arguments('/std:c++14', language : 'cpp')
-  endif
-endif
-
-if cpp.get_argument_syntax() == 'msvc'
-  # Ignore several spurious warnings for things HarfBuzz does very commonly.
-  # If a warning is completely useless and spammy, use '/wdXXXX' to suppress it
-  # If a warning is harmless but hard to fix, use '/woXXXX' so it's shown once
-  # NOTE: Only add warnings here if you are sure they're spurious
-  msvc_args = [
-    '/wd4244', # lossy type conversion (e.g. double -> int)
-    '/bigobj', # hb-subset.cc -- compile error C1128: number of sections exceeded object file format limit
-    cpp.get_supported_arguments(['/utf-8']), # set the input encoding to utf-8
-  ]
-  add_project_arguments(msvc_args, language: ['c', 'cpp'])
-  # Disable SAFESEH with MSVC for libs that use external deps that are built with MinGW
-  # noseh_link_args = ['/SAFESEH:NO']
-endif
-
-add_project_link_arguments(cpp.get_supported_link_arguments([
-  '-Bsymbolic-functions'
-]), language: 'c')
-
-add_project_arguments(cpp.get_supported_arguments([
-  '-fno-exceptions',
-  '-fno-rtti',
-  '-fno-threadsafe-statics',
-  '-fvisibility-inlines-hidden',
-]), language: 'cpp')
-
-if host_machine.cpu_family() == 'arm' and cpp.alignment('struct { char c; }') != 1
-  if cpp.has_argument('-mstructure-size-boundary=8')
-    add_project_arguments('-mstructure-size-boundary=8', language: 'cpp')
-  endif
-endif
-
-if host_machine.system() == 'windows'
-  add_project_arguments(cpp.get_supported_arguments([
-    '-Wa,-mbig-obj'
-  ]), language : 'cpp')
-endif
-
-check_headers = [
-  ['unistd.h'],
-  ['sys/mman.h'],
-  ['stdbool.h'],
-  ['xlocale.h'],
+hb_base_ragel_generated_sources = files(
+  'hb-buffer-deserialize-json.hh',
+  'hb-buffer-deserialize-text-glyphs.hh',
+  'hb-buffer-deserialize-text-unicode.hh',
+  'hb-number-parser.hh',
+  'hb-ot-shaper-indic-machine.hh',
+  'hb-ot-shaper-khmer-machine.hh',
+  'hb-ot-shaper-myanmar-machine.hh',
+  'hb-ot-shaper-use-machine.hh',
+)
+hb_base_ragel_sources = [
+  'hb-buffer-deserialize-json.rl',
+  'hb-buffer-deserialize-text-glyphs.rl',
+  'hb-buffer-deserialize-text-unicode.rl',
+  'hb-number-parser.rl',
+  'hb-ot-shaper-indic-machine.rl',
+  'hb-ot-shaper-khmer-machine.rl',
+  'hb-ot-shaper-myanmar-machine.rl',
+  'hb-ot-shaper-use-machine.rl',
 ]
 
-check_funcs = [
-  ['atexit', {'prefix': '#include <stdlib.h>'}],
-  ['mprotect', {'prefix': '#include <sys/mman.h>'}],
-  ['sysconf', {'prefix': '#include <unistd.h>'}],
-  ['getpagesize', {'prefix': '#include <unistd.h>'}],
-  ['mmap', {'prefix': '#include <sys/mman.h>'}],
-  ['isatty', {'prefix': '#include <unistd.h>'}],
-  ['uselocale', {'prefix': '#include <locale.h>'}],
-  ['newlocale', {'prefix': '#include <locale.h>'}],
-  ['sincosf', {'prefix': '#define _GNU_SOURCE\n#include <math.h>'}],
-]
+hb_base_headers = files(
+  'hb-aat-layout.h',
+  'hb-aat.h',
+  'hb-blob.h',
+  'hb-buffer.h',
+  'hb-common.h',
+  'hb-cplusplus.hh',
+  'hb-deprecated.h',
+  'hb-draw.h',
+  'hb-paint.h',
+  'hb-face.h',
+  'hb-font.h',
+  'hb-map.h',
+  'hb-ot-color.h',
+  'hb-ot-deprecated.h',
+  'hb-ot-font.h',
+  'hb-ot-layout.h',
+  'hb-ot-math.h',
+  'hb-ot-meta.h',
+  'hb-ot-metrics.h',
+  'hb-ot-name.h',
+  'hb-ot-shape.h',
+  'hb-ot-var.h',
+  'hb-ot.h',
+  'hb-set.h',
+  'hb-shape-plan.h',
+  'hb-shape.h',
+  'hb-style.h',
+  'hb-unicode.h',
+  'hb.h',
+)
+hb_base_headers += hb_version_h
 
-m_dep = cpp.find_library('m', required: false)
+# Optional Sources and Headers with external deps
 
-if meson.version().version_compare('>=0.60.0')
-  # pkg-config: freetype2, cmake: Freetype
-  freetype_dep = dependency('freetype2', 'Freetype',
-                            version: freetype_min_version,
-                            required: get_option('freetype'),
-                            default_options: ['harfbuzz=disabled'],
-                            allow_fallback: true)
+hb_ft_sources = files('hb-ft.cc', 'hb-ft-colr.hh')
+hb_ft_headers = files('hb-ft.h')
+
+hb_glib_sources = files('hb-glib.cc')
+hb_glib_headers = files('hb-glib.h')
+
+hb_graphite2_sources = files('hb-graphite2.cc')
+hb_graphite2_headers = files('hb-graphite2.h')
+
+hb_wasm_sources = files(
+  'hb-wasm-api.cc',
+  'hb-wasm-api.hh',
+  'hb-wasm-api-blob.hh',
+  'hb-wasm-api-buffer.hh',
+  'hb-wasm-api-common.hh',
+  'hb-wasm-api-face.hh',
+  'hb-wasm-api-font.hh',
+  'hb-wasm-api-shape.hh',
+  'hb-wasm-shape.cc',
+)
+hb_wasm_headers = files()
+
+# System-dependent sources and headers
+
+hb_coretext_sources = files('hb-coretext.cc')
+hb_coretext_headers = files('hb-coretext.h')
+
+hb_directwrite_sources = files('hb-directwrite.cc')
+hb_directwrite_headers = files('hb-directwrite.h')
+
+hb_gdi_sources = files('hb-gdi.cc')
+hb_gdi_headers = files('hb-gdi.h')
+
+hb_uniscribe_sources = files('hb-uniscribe.cc')
+hb_uniscribe_headers = files('hb-uniscribe.h')
+
+# Sources for libharfbuzz-gobject and libharfbuzz-icu
+hb_icu_sources = files('hb-icu.cc')
+hb_icu_headers = files('hb-icu.h')
+
+# Sources for libharfbuzz-subset
+hb_subset_sources = files(
+  'hb-number.cc',
+  'hb-number.hh',
+  'hb-ot-cff1-table.cc',
+  'hb-ot-cff2-table.cc',
+  'hb-static.cc',
+  'hb-subset-accelerator.hh',
+  'hb-subset-cff-common.cc',
+  'hb-subset-cff-common.hh',
+  'hb-subset-cff1.cc',
+  'hb-subset-cff2.cc',
+  'hb-subset-input.cc',
+  'hb-subset-input.hh',
+  'hb-subset-instancer-iup.hh',
+  'hb-subset-instancer-iup.cc',
+  'hb-subset-instancer-solver.hh',
+  'hb-subset-instancer-solver.cc',
+  'hb-subset-plan.cc',
+  'hb-subset-plan.hh',
+  'hb-subset-plan-member-list.hh',
+  'hb-subset-repacker.cc',
+  'graph/gsubgpos-context.cc',
+  'graph/gsubgpos-context.hh',
+  'graph/gsubgpos-graph.hh',
+  'graph/pairpos-graph.hh',
+  'graph/markbasepos-graph.hh',
+  'graph/coverage-graph.hh',
+  'graph/classdef-graph.hh',
+  'graph/split-helpers.hh',
+  'hb-subset.cc',
+  'hb-subset.hh',
+)
+
+hb_subset_headers = files(
+  'hb-subset.h',
+  'hb-subset-repacker.h'
+)
+
+hb_gobject_sources = files(
+  'hb-gobject-structs.cc'
+)
+
+hb_gobject_headers = files(
+  'hb-gobject.h',
+  'hb-gobject-structs.h',
+)
+
+ragel = find_program('ragel', version: '6.10', required: false)
+has_ragel = ragel.found()
+if not has_ragel and get_option('ragel_subproject')
+    ragel = subproject('ragel').get_variable('ragel')
+    has_ragel = true
+endif
+if not has_ragel
+  if not meson.is_subproject()
+    warning('You have to install ragel if you are going to develop HarfBuzz itself')
+  endif
 else
-  # painful hack to handle multiple dependencies but also respect options
-  freetype_opt = get_option('freetype')
-  # we want to handle enabled manually after fallbacks, but also handle disabled normally
-  if freetype_opt.enabled()
-    freetype_opt = false
-  endif
-  # try pkg-config name
-  freetype_dep = dependency('freetype2', version: freetype_min_version, method: 'pkg-config', required: freetype_opt)
-  # when disabled, leave it not-found
-  if not freetype_dep.found() and not get_option('freetype').disabled()
-    # Try cmake name
-    freetype_dep = dependency('Freetype', version: freetype_min_version, method: 'cmake', required: false)
-    # Subproject fallback, `allow_fallback: true` means the fallback will be
-    # tried even if the freetype option is set to `auto`.
-    if not freetype_dep.found()
-      freetype_dep = dependency('freetype2',
-                                version: freetype_min_version,
-                                method: 'pkg-config',
-                                required: get_option('freetype'),
-                                default_options: ['harfbuzz=disabled'],
-                                allow_fallback: true)
-    endif
-  endif
-endif
-
-glib_dep = dependency('glib-2.0', version: glib_min_version, required: get_option('glib'))
-gobject_dep = dependency('gobject-2.0', version: glib_min_version, required: get_option('gobject'))
-graphite2_dep = dependency('graphite2', version: graphite2_min_version, required: get_option('graphite2'))
-graphite_dep = dependency('graphite2', version: graphite2_min_version, required: get_option('graphite'))
-wasm_dep = cpp.find_library('iwasm', required: get_option('wasm'))
-# How to check whether iwasm was built, and hence requires, LLVM?
-#llvm_dep = cpp.find_library('LLVM-15', required: get_option('wasm'))
-
-if meson.version().version_compare('>=0.60.0')
-  # pkg-config: icu-uc, cmake: ICU but with components
-  icu_dep = dependency('icu-uc', 'ICU',
-                            version: icu_min_version,
-                            components: 'uc',
-                            required: get_option('icu'),
-                            allow_fallback: true)
-else
-  # painful hack to handle multiple dependencies but also respect options
-  icu_opt = get_option('icu')
-  # we want to handle enabled manually after fallbacks, but also handle disabled normally
-  if icu_opt.enabled()
-    icu_opt = false
-  endif
-  # try pkg-config name
-  icu_dep = dependency('icu-uc', version: icu_min_version, method: 'pkg-config', required: icu_opt)
-  # when disabled, leave it not-found
-  if not icu_dep.found() and not get_option('icu').disabled()
-    # Try cmake name
-    icu_dep = dependency('ICU', version: icu_min_version, method: 'cmake', components: 'uc', required: false)
-    # Try again with subproject fallback. `allow_fallback: true` means the
-    # fallback will be tried even if the icu option is set to `auto`, but
-    # we cannot pass this option until Meson 0.59.0, because no wrap file
-    # is checked into git.
-    if not icu_dep.found()
-      icu_dep = dependency('icu-uc',
-                           version: icu_min_version,
-                           method: 'pkg-config',
-                           required: get_option('icu'))
-    endif
-  endif
-endif
-
-if icu_dep.found() and icu_dep.type_name() == 'pkgconfig'
-  icu_defs = icu_dep.get_variable(pkgconfig: 'DEFS', default_value: '').split()
-  if icu_defs.length() > 0
-    add_project_arguments(icu_defs, language: ['c', 'cpp'])
-  endif
-endif
-
-cairo_dep = null_dep
-cairo_ft_dep = null_dep
-if not get_option('cairo').disabled()
-  cairo_dep = dependency('cairo', version: cairo_min_version, required: false)
-  cairo_ft_dep = dependency('cairo-ft', version: cairo_min_version, required: false)
-
-  if (not cairo_dep.found() and
-      cpp.get_argument_syntax() == 'msvc' and
-      cpp.has_header('cairo.h'))
-    cairo_dep = cpp.find_library('cairo', required: false)
-    if cairo_dep.found() and cpp.has_function('cairo_ft_font_face_create_for_ft_face',
-                                              prefix: '#include <cairo-ft.h>',
-                                              dependencies: cairo_dep)
-      cairo_ft_dep = cairo_dep
-    endif
-  endif
-
-  if not cairo_dep.found()
-    # Note that we don't have harfbuzz -> cairo -> freetype2 -> harfbuzz fallback
-    # dependency cycle here because we have configured freetype2 above with
-    # harfbuzz support disabled, so when cairo will lookup freetype2 dependency
-    # it will be forced to use that one.
-    cairo_dep = dependency('cairo', version: cairo_min_version, required: get_option('cairo'))
-    cairo_ft_required = get_option('cairo').enabled() and get_option('freetype').enabled()
-    cairo_ft_dep = dependency('cairo-ft', version: cairo_min_version, required: cairo_ft_required)
-  endif
-endif
-
-chafa_dep = dependency('chafa', version: chafa_min_version, required: get_option('chafa'))
-
-conf = configuration_data()
-incconfig = include_directories('.')
-
-add_project_arguments('-DHAVE_CONFIG_H', language: ['c', 'cpp'])
-
-warn_cflags = [
-  '-Wno-non-virtual-dtor',
-]
-
-cpp_args = cpp.get_supported_arguments(warn_cflags)
-
-if glib_dep.found()
-  conf.set('HAVE_GLIB', 1)
-endif
-
-if gobject_dep.found()
-  conf.set('HAVE_GOBJECT', 1)
-endif
-
-if cairo_dep.found()
-  conf.set('HAVE_CAIRO', 1)
-  check_cairo_funcs = [
-    ['cairo_user_font_face_set_render_color_glyph_func', {'deps': cairo_dep}],
-    ['cairo_font_options_get_custom_palette_color', {'deps': cairo_dep}],
-    ['cairo_user_scaled_font_get_foreground_source', {'deps': cairo_dep}],
-  ]
-
-  if cairo_dep.type_name() == 'internal'
-    foreach func: check_cairo_funcs
-      name = func[0]
-      conf.set('HAVE_@0@'.format(name.to_upper()), 1)
-    endforeach
-  else
-    check_funcs += check_cairo_funcs
-  endif
-endif
-
-if cairo_ft_dep.found()
-  conf.set('HAVE_CAIRO_FT', 1)
-endif
-
-if chafa_dep.found()
-  conf.set('HAVE_CHAFA', 1)
-endif
-
-if wasm_dep.found()
-  conf.set('HAVE_WASM', 1)
-  conf.set('HB_WASM_MODULE_DIR', '"'+get_option('prefix')+'/'+get_option('libdir')+'/harfbuzz/wasm"')
-endif
-
-if graphite2_dep.found() or graphite_dep.found()
-  conf.set('HAVE_GRAPHITE2', 1)
-endif
-
-if icu_dep.found()
-  conf.set('HAVE_ICU', 1)
-endif
-
-if get_option('icu_builtin')
-  conf.set('HAVE_ICU_BUILTIN', 1)
-endif
-
-if get_option('experimental_api')
-  conf.set('HB_EXPERIMENTAL_API', 1)
-endif
-
-if freetype_dep.found()
-  conf.set('HAVE_FREETYPE', 1)
-  check_freetype_funcs = [
-    ['FT_Get_Var_Blend_Coordinates', {'deps': freetype_dep}],
-    ['FT_Set_Var_Blend_Coordinates', {'deps': freetype_dep}],
-    ['FT_Done_MM_Var', {'deps': freetype_dep}],
-    ['FT_Get_Transform', {'deps': freetype_dep}],
-  ]
-
-  if freetype_dep.type_name() == 'internal'
-    foreach func: check_freetype_funcs
-      name = func[0]
-      conf.set('HAVE_@0@'.format(name.to_upper()), 1)
-    endforeach
-  else
-    check_funcs += check_freetype_funcs
-  endif
-endif
-
-gdi_uniscribe_deps = []
-# GDI (Uniscribe) (Windows)
-if host_machine.system() == 'windows' and not get_option('gdi').disabled()
-  if (get_option('directwrite').enabled() and
-      not (cpp.has_header('usp10.h') and cpp.has_header('windows.h')))
-    error('GDI/Uniscribe was enabled explicitly, but required headers are missing.')
-  endif
-
-  gdi_deps_found = true
-  foreach usplib : ['usp10', 'gdi32', 'rpcrt4']
-    dep = cpp.find_library(usplib, required: get_option('gdi'))
-    gdi_deps_found = gdi_deps_found and dep.found()
-    gdi_uniscribe_deps += dep
+  ragel_helper = find_program('gen-ragel-artifacts.py')
+  foreach rl : hb_base_ragel_sources
+    hh = rl.split('.')[0] + '.hh'
+    custom_target('@0@'.format(hh),
+      build_by_default: true,
+      input: rl,
+      output: hh,
+      command: [ragel_helper, ragel, '@OUTPUT@', meson.current_source_dir(), '@INPUT@'],
+    )
   endforeach
-
-  if gdi_deps_found
-    conf.set('HAVE_UNISCRIBE', 1)
-    conf.set('HAVE_GDI', 1)
-  endif
 endif
 
-# DirectWrite (Windows)
-if host_machine.system() == 'windows' and not get_option('directwrite').disabled()
-  if get_option('directwrite').enabled() and not cpp.has_header('dwrite_1.h')
-    error('DirectWrite was enabled explicitly, but required header is missing.')
-  endif
+custom_target('harfbuzz.cc',
+  build_by_default: true,
+  output: 'harfbuzz.cc',
+  input: hb_base_sources + hb_glib_sources + hb_ft_sources +
+         hb_graphite2_sources + hb_uniscribe_sources + hb_gdi_sources +
+         hb_directwrite_sources + hb_coretext_sources + hb_wasm_sources,
+  command: [find_program('gen-harfbuzzcc.py'),
+            '@OUTPUT@', meson.current_source_dir(), '@INPUT@'],
+)
 
-  conf.set('HAVE_DIRECTWRITE', 1)
+incsrc = include_directories('.')
+
+hb_sources = hb_base_sources + hb_base_ragel_generated_sources
+hb_headers = hb_base_headers
+
+harfbuzz_deps = [thread_dep, m_dep] + harfbuzz_extra_deps
+
+libharfbuzz_link_language = 'c'
+
+if conf.get('HAVE_FREETYPE', 0) == 1
+  hb_sources += hb_ft_sources
+  hb_headers += hb_ft_headers
+  harfbuzz_deps += [freetype_dep]
 endif
 
-# CoreText (macOS)
-coretext_deps = []
-if host_machine.system() == 'darwin' and not get_option('coretext').disabled()
-  app_services_dep = dependency('appleframeworks', modules: ['ApplicationServices'], required: false)
-  if cpp.has_type('CTFontRef', prefix: '#include <ApplicationServices/ApplicationServices.h>', dependencies: app_services_dep)
-    coretext_deps += [app_services_dep]
-    conf.set('HAVE_CORETEXT', 1)
-  # On iOS CoreText and CoreGraphics are stand-alone frameworks
-  # Check for a different symbol to avoid getting cached result
-  else
-    coretext_dep = dependency('appleframeworks', modules: ['CoreText'], required: false)
-    coregraphics_dep = dependency('appleframeworks', modules: ['CoreGraphics'], required: false)
-    corefoundation_dep = dependency('appleframeworks', modules: ['CoreFoundation'], required: false)
-    if cpp.has_type('CTRunRef', prefix: '#include <CoreText/CoreText.h>', dependencies: [coretext_dep, coregraphics_dep, corefoundation_dep])
-      coretext_deps += [coretext_dep, coregraphics_dep, corefoundation_dep]
-      conf.set('HAVE_CORETEXT', 1)
-    elif get_option('coretext').enabled()
-      error('CoreText was enabled explicitly, but required headers or frameworks are missing.')
-    endif
-  endif
+if conf.get('HAVE_GLIB', 0) == 1
+  hb_sources += hb_glib_sources
+  hb_headers += hb_glib_headers
+  harfbuzz_deps += [glib_dep]
 endif
 
-# threads
-thread_dep = null_dep
-if host_machine.system() != 'windows'
-  thread_dep = dependency('threads', required: false)
+# We set those here to not include the sources below that are of no use to
+# GObject Introspection
+gir_sources = hb_sources + hb_gobject_sources
+gir_headers = hb_headers + hb_gobject_headers
 
-  if thread_dep.found()
-    conf.set('HAVE_PTHREAD', 1)
-  endif
+if conf.get('HAVE_GDI', 0) == 1
+  hb_sources += hb_gdi_sources
+  hb_headers += hb_gdi_headers
+  harfbuzz_deps += gdi_uniscribe_deps
 endif
 
-conf.set_quoted('PACKAGE_NAME', 'HarfBuzz')
-conf.set_quoted('PACKAGE_VERSION', meson.project_version())
+if conf.get('HAVE_GRAPHITE2', 0) == 1
+  hb_sources += hb_graphite2_sources
+  hb_headers += hb_graphite2_headers
+  harfbuzz_deps += [graphite2_dep, graphite_dep]
+endif
 
-foreach check : check_headers
-  name = check[0]
+if conf.get('HAVE_WASM', 0) == 1
+  hb_sources += hb_wasm_sources
+  hb_headers += hb_wasm_headers
+  harfbuzz_deps += wasm_dep
+  #harfbuzz_deps += llvm_dep
+endif
 
-  if cpp.has_header(name)
-    conf.set('HAVE_@0@'.format(name.to_upper().underscorify()), 1)
-  endif
+if conf.get('HAVE_UNISCRIBE', 0) == 1
+  hb_sources += hb_uniscribe_sources
+  hb_headers += hb_uniscribe_headers
+endif
+
+if conf.get('HAVE_DIRECTWRITE', 0) == 1
+  hb_sources += hb_directwrite_sources
+  hb_headers += hb_directwrite_headers
+  # hb-directwrite needs a C++ linker
+  libharfbuzz_link_language = 'cpp'
+endif
+
+if conf.get('HAVE_CORETEXT', 0) == 1
+  hb_sources += hb_coretext_sources
+  hb_headers += hb_coretext_headers
+  harfbuzz_deps += coretext_deps
+endif
+
+have_icu = conf.get('HAVE_ICU', 0) == 1
+have_icu_builtin = conf.get('HAVE_ICU_BUILTIN', 0) == 1
+if have_icu and have_icu_builtin
+  hb_sources += hb_icu_sources
+  hb_headers += hb_icu_headers
+  harfbuzz_deps += [icu_dep]
+endif
+
+features = [
+  'CAIRO',
+  'CORETEXT',
+  'DIRECTWRITE',
+  'FREETYPE',
+  'GDI',
+  'GLIB',
+  'GOBJECT',
+  'GRAPHITE',
+  'ICU',
+  'UNISCRIBE',
+  'WASM',
+]
+
+hb_enabled_features = configuration_data()
+hb_supported_features = configuration_data()
+foreach feature : features
+  key = 'HB_HAS_@0@'.format(feature)
+  hb_enabled_features.set(key, conf.get('HAVE_@0@'.format(feature), false))
+  hb_supported_features.set(key, 1)
 endforeach
 
-harfbuzz_extra_deps = []
-foreach check : check_funcs
-  name = check[0]
-  opts = check.get(1, {})
-  link_withs = opts.get('link_with', [])
-  check_deps = opts.get('deps', [])
-  check_prefix = opts.get('prefix', '')
-  extra_deps = []
-  found = true
+# The enabled features. This file is installed.
+hb_features_h = configure_file(input: 'hb-features.h.in',
+                               output: 'hb-features.h',
+                               configuration: hb_enabled_features,
+                               install: true,
+                               install_dir: get_option('includedir') / meson.project_name())
 
-  # First try without linking
-  found = cpp.has_function(name, prefix: check_prefix, dependencies: check_deps)
+# This file is generated to convince gtk-doc to generate documentation for all
+# HB_HAS_* macros, whether they are enabled for the current build or not.
+# This file should not be installed.
+hb_supported_features_h = configure_file(input: 'hb-features.h.in',
+                               output: 'hb-supported-features.h',
+                               configuration: hb_supported_features,
+                               install: false)
 
-  if not found and link_withs.length() > 0
-    found = true
+# Base and default-included sources and headers
 
-    foreach link_with : link_withs
-      dep = cpp.find_library(link_with, required: false)
-      if dep.found()
-        extra_deps += dep
-      else
-        found = false
-      endif
+gen_def = find_program('gen-def.py')
+gen_def_cmd = [gen_def, '@OUTPUT@', '@INPUT@']
+if get_option('experimental_api')
+  gen_def_cmd += '--experimental-api'
+endif
+
+# harfbuzz
+harfbuzz_def = custom_target('harfbuzz.def',
+    command: gen_def_cmd,
+    input: hb_headers,
+    output: 'harfbuzz.def')
+defs_list = [harfbuzz_def]
+
+version = '0.@0@.0'.format(hb_version_int)
+
+extra_hb_cpp_args = []
+if cpp.get_define('_MSC_FULL_VER') != ''
+  if get_option('default_library') != 'static'
+    extra_hb_cpp_args += '-DHB_DLL_EXPORT'
+  endif
+  hb_so_version = ''
+else
+  hb_so_version = '0'
+endif
+
+if get_option('fuzzer_ldflags') != ''
+  extra_hb_cpp_args += ['-DHB_CUSTOM_MALLOC']
+  hb_sources += 'failing-alloc.c'
+  hb_subset_sources += 'failing-alloc.c'
+  hb_icu_sources += 'failing-alloc.c'
+  hb_gobject_sources += 'failing-alloc.c'
+endif
+
+darwin_versions = [hb_version_int, '@0@.0.0'.format(hb_version_int)]
+
+libharfbuzz = library('harfbuzz', hb_sources,
+  include_directories: incconfig,
+  dependencies: harfbuzz_deps,
+  cpp_args: cpp_args + extra_hb_cpp_args,
+  soversion: hb_so_version,
+  version: version,
+  install: true,
+  darwin_versions: darwin_versions,
+  link_language: libharfbuzz_link_language,
+)
+
+libharfbuzz_dep = declare_dependency(
+  link_with: libharfbuzz,
+  include_directories: incsrc,
+  dependencies: harfbuzz_deps)
+meson.override_dependency('harfbuzz', libharfbuzz_dep)
+
+# harfbuzz-subset
+harfbuzz_subset_def = custom_target('harfbuzz-subset.def',
+    command: gen_def_cmd,
+    input: hb_subset_headers,
+    output: 'harfbuzz-subset.def')
+defs_list += [harfbuzz_subset_def]
+
+libharfbuzz_subset = library('harfbuzz-subset', hb_subset_sources,
+  include_directories: incconfig,
+  dependencies: [m_dep],
+  link_with: [libharfbuzz],
+  cpp_args: cpp_args + extra_hb_cpp_args,
+  soversion: hb_so_version,
+  version: version,
+  install: true,
+  darwin_versions: darwin_versions,
+  link_language: 'c',
+)
+
+custom_target('harfbuzz-subset.cc',
+  build_by_default: true,
+  output: 'harfbuzz-subset.cc',
+  input: hb_base_sources + hb_subset_sources,
+  command: [find_program('gen-harfbuzzcc.py'),
+            '@OUTPUT@', meson.current_source_dir(), '@INPUT@'],
+)
+
+libharfbuzz_subset_dep = declare_dependency(
+  link_with: libharfbuzz_subset,
+  include_directories: incsrc,
+  dependencies: [m_dep])
+meson.override_dependency('harfbuzz-subset', libharfbuzz_subset_dep)
+
+libharfbuzz_cairo_dep = null_dep
+if conf.get('HAVE_CAIRO', 0) == 1
+  hb_cairo_sources = [
+    'hb-cairo.cc',
+    'hb-cairo-utils.cc',
+    'hb-static.cc'
+  ]
+
+  hb_cairo_headers = [
+    'hb-cairo.h',
+  ]
+
+  cairo_dep = dependency('cairo')
+
+  libharfbuzz_cairo = library('harfbuzz-cairo', hb_cairo_sources,
+    include_directories: incconfig,
+    dependencies: [m_dep, cairo_dep],
+    link_with: [libharfbuzz],
+     cpp_args: cpp_args + extra_hb_cpp_args,
+    soversion: hb_so_version,
+    version: version,
+    install: true,
+    darwin_versions: darwin_versions,
+    link_language: 'c',
+  )
+
+  install_headers(hb_cairo_headers, subdir: meson.project_name())
+
+  libharfbuzz_cairo_dep = declare_dependency(
+    link_with: libharfbuzz_cairo,
+    include_directories: incsrc,
+    dependencies: [m_dep, cairo_dep])
+  meson.override_dependency('harfbuzz-cairo', libharfbuzz_cairo_dep)
+
+  harfbuzz_cairo_def = custom_target('harfbuzz-cairo.def',
+    command: gen_def_cmd,
+    input: hb_cairo_headers,
+    output: 'harfbuzz-cairo.def')
+  defs_list += [harfbuzz_cairo_def]
+
+  pkgmod.generate(libharfbuzz_cairo,
+    description: 'HarfBuzz cairo support',
+    requires: ['harfbuzz = @0@'.format(meson.project_version())],
+    subdirs: [meson.project_name()],
+    version: meson.project_version(),
+  )
+endif
+
+if get_option('tests').enabled()
+  # TODO: Microsoft LINK gives the following because extern, non dllexport
+  # symbols can only be used when linking against a static library
+  # error LNK2019: unresolved external symbol "unsigned __int64 const * const _hb_NullPool"
+  if cpp.get_define('_MSC_FULL_VER') == ''
+    noinst_programs = {
+      'main': 'main.cc',
+      'test-basics': 'test.cc',
+      'test-buffer-serialize': 'test-buffer-serialize.cc',
+      'test-ot-meta': 'test-ot-meta.cc',
+      'test-ot-name': 'test-ot-name.cc',
+      'test-ot-glyphname': 'test-ot-glyphname.cc',
+      'test-ot-gpos-size-params': 'test-gpos-size-params.cc',
+      'test-ot-gsub-get-alternates': 'test-gsub-get-alternates.cc',
+      'test-ot-gsub-would-substitute': 'test-gsub-would-substitute.cc',
+      'test-use-table': 'test-use-table.cc',
+    }
+    foreach name, source : noinst_programs
+      executable(name, source,
+        include_directories: incconfig,
+        cpp_args: cpp_args + ['-UNDEBUG'],
+        dependencies: libharfbuzz_dep,
+        install: false,
+      )
     endforeach
+  endif
 
-    if found
-      found = cpp.has_function(name, prefix: check_prefix, dependencies: check_deps + extra_deps)
+  compiled_tests = {
+    'test-algs': ['test-algs.cc', 'hb-static.cc'],
+    'test-array': ['test-array.cc'],
+    'test-bimap': ['test-bimap.cc', 'hb-static.cc'],
+    'test-cff': ['test-cff.cc', 'hb-static.cc'],
+    'test-classdef-graph': ['graph/test-classdef-graph.cc', 'hb-static.cc', 'graph/gsubgpos-context.cc'],
+    'test-iter': ['test-iter.cc', 'hb-static.cc'],
+    'test-machinery': ['test-machinery.cc', 'hb-static.cc'],
+    'test-map': ['test-map.cc', 'hb-static.cc'],
+    'test-multimap': ['test-multimap.cc', 'hb-static.cc'],
+    'test-number': ['test-number.cc', 'hb-number.cc'],
+    'test-ot-tag': ['hb-ot-tag.cc'],
+    'test-set': ['test-set.cc', 'hb-static.cc'],
+    'test-serialize': ['test-serialize.cc', 'hb-static.cc'],
+    'test-vector': ['test-vector.cc', 'hb-static.cc'],
+    'test-repacker': ['test-repacker.cc', 'hb-static.cc', 'graph/gsubgpos-context.cc'],
+    'test-instancer-solver': ['test-subset-instancer-solver.cc', 'hb-subset-instancer-solver.cc', 'hb-static.cc'],
+    'test-priority-queue': ['test-priority-queue.cc', 'hb-static.cc'],
+    'test-tuple-varstore': ['test-tuple-varstore.cc', 'hb-subset-instancer-solver.cc', 'hb-subset-instancer-iup.cc', 'hb-static.cc'],
+    'test-item-varstore': ['test-item-varstore.cc', 'hb-subset-instancer-solver.cc', 'hb-subset-instancer-iup.cc', 'hb-static.cc'],
+    'test-unicode-ranges': ['test-unicode-ranges.cc'],
+  }
+  foreach name, source : compiled_tests
+    if cpp.get_define('_MSC_FULL_VER') != '' and source.contains('hb-static.cc')
+      # TODO: Microsoft compilers cannot link tests using hb-static.cc, fix them
+      continue
+    endif
+    test(name, executable(name, source,
+      include_directories: incconfig,
+      cpp_args: cpp_args + ['-DMAIN', '-UNDEBUG'],
+      dependencies: libharfbuzz_dep,
+      install: false,
+    ), suite: ['src'])
+  endforeach
+endif
+
+pkgmod.generate(libharfbuzz,
+  description: 'HarfBuzz text shaping library',
+  subdirs: [meson.project_name()],
+  version: meson.project_version(),
+)
+
+pkgmod.generate(libharfbuzz_subset,
+  description: 'HarfBuzz font subsetter',
+  requires: ['harfbuzz = @0@'.format(meson.project_version())],
+  subdirs: [meson.project_name()],
+  version: meson.project_version(),
+)
+
+libharfbuzz_icu_dep = null_dep
+if have_icu and not have_icu_builtin
+  harfbuzz_icu_def = custom_target('harfbuzz-icu.def',
+    command: gen_def_cmd,
+    input: [hb_icu_headers],
+    output: 'harfbuzz-icu.def')
+  defs_list += [harfbuzz_icu_def]
+
+  libharfbuzz_icu = library('harfbuzz-icu', [hb_icu_sources, hb_icu_headers],
+    include_directories: incconfig,
+    dependencies: icu_dep,
+    link_with: [libharfbuzz],
+    cpp_args: cpp_args + extra_hb_cpp_args,
+    soversion: hb_so_version,
+    version: version,
+    install: true,
+    darwin_versions: darwin_versions,
+    # ICU links to stdc++ anyway so the default linker is good
+    # link_language: 'c',
+  )
+
+  libharfbuzz_icu_dep = declare_dependency(
+    link_with: libharfbuzz_icu,
+    include_directories: incsrc,
+    dependencies: icu_dep)
+  meson.override_dependency('harfbuzz-icu', libharfbuzz_icu_dep)
+
+  pkgmod.generate(libharfbuzz_icu,
+    description: 'HarfBuzz text shaping library ICU integration',
+    requires: ['harfbuzz = @0@'.format(meson.project_version())],
+    subdirs: [meson.project_name()],
+    version: meson.project_version(),
+  )
+
+  install_headers(hb_icu_headers, subdir: meson.project_name())
+endif
+
+have_gobject = conf.get('HAVE_GOBJECT', 0) == 1
+
+# This code (especially PACKAGE_INIT) kept similar to what CMake's own
+# configure_package_config_file() generates, see
+# https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#command:configure_package_config_file
+
+cmake_config = configuration_data()
+cmake_config_dir = cmake_package_install_dir / 'harfbuzz'
+
+have_fs_relative_to = meson.version().version_compare('>=1.3.0')
+
+if not have_fs_relative_to
+  relative_to = find_program('relative_to.py')
+endif
+
+if have_fs_relative_to
+  cmake_package_prefix_dir = fs.relative_to(get_option('prefix'), get_option('prefix') / cmake_config_dir)
+else
+  cmake_package_prefix_dir = run_command(relative_to, get_option('prefix'), get_option('prefix') / cmake_config_dir, check: true).stdout().strip()
+endif
+
+cmake_package_prefix_dir = '${CMAKE_CURRENT_LIST_DIR}/@0@'.format(cmake_package_prefix_dir)
+
+# Make all the relevant paths relative to our prefix, so we can later append
+# them onto ${PACKAGE_PREFIX_DIR} to get the correct paths.
+
+cmake_install_includedir = get_option('includedir')
+
+if fs.is_absolute(cmake_install_includedir)
+  if have_fs_relative_to
+    cmake_install_includedir = fs.relative_to(cmake_install_includedir, get_option('prefix'))
+  else
+    cmake_install_includedir = run_command(relative_to, cmake_install_includedir, get_option('prefix'), check: true).stdout().strip()
+  endif
+endif
+
+cmake_install_libdir = get_option('libdir')
+
+if fs.is_absolute(cmake_install_libdir)
+  if have_fs_relative_to
+    cmake_install_libdir = fs.relative_to(cmake_install_libdir, get_option('prefix'))
+  else
+    cmake_install_libdir = run_command(relative_to, cmake_install_libdir, get_option('prefix'), check: true).stdout().strip()
+  endif
+endif
+
+cmake_config.set('PACKAGE_INIT', '''
+get_filename_component(PACKAGE_PREFIX_DIR "@0@" ABSOLUTE)
+
+macro(set_and_check _var _file)
+  set(${_var} "${_file}")
+  if(NOT EXISTS "${_file}")
+    message(FATAL_ERROR "File or directory ${_file} referenced by variable ${_var} does not exist !")
+  endif()
+endmacro()
+
+macro(check_required_components _NAME)
+  foreach(comp ${${_NAME}_FIND_COMPONENTS})
+    if(NOT ${_NAME}_${comp}_FOUND)
+      if(${_NAME}_FIND_REQUIRED_${comp})
+        set(${_NAME}_FOUND FALSE)
+      endif()
+    endif()
+  endforeach()
+endmacro()
+'''.format(cmake_package_prefix_dir))
+
+cmake_config.set('PACKAGE_CMAKE_INSTALL_INCLUDEDIR', '${PACKAGE_PREFIX_DIR}/@0@'.format(cmake_install_includedir))
+cmake_config.set('PACKAGE_CMAKE_INSTALL_LIBDIR', '${PACKAGE_PREFIX_DIR}/@0@'.format(cmake_install_libdir))
+cmake_config.set('PACKAGE_INCLUDE_INSTALL_DIR', '${PACKAGE_PREFIX_DIR}/@0@/@1@'.format(cmake_install_includedir, meson.project_name()))
+cmake_config.set('HB_HAVE_GOBJECT', have_gobject ? 'YES' : 'NO')
+cmake_config.set('HB_LIBRARY_TYPE', get_option('default_library') == 'static' ? 'STATIC' : 'SHARED')
+
+if get_option('default_library') == 'static'
+  cmake_config.set('HB_LIB_PREFIX', '${CMAKE_STATIC_LIBRARY_PREFIX}')
+  cmake_config.set('HB_LIB_SUFFIX', '${CMAKE_STATIC_LIBRARY_SUFFIX}')
+elif host_machine.system() == 'darwin'
+  cmake_config.set('HB_LIB_PREFIX', '${CMAKE_SHARED_LIBRARY_PREFIX}')
+  cmake_config.set('HB_LIB_SUFFIX', '.@0@${CMAKE_SHARED_LIBRARY_SUFFIX}'.format(hb_so_version))
+elif host_machine.system() == 'windows'
+  cmake_config.set('HB_LIB_PREFIX', '${CMAKE_IMPORT_LIBRARY_PREFIX}')
+  cmake_config.set('HB_LIB_SUFFIX', '${CMAKE_IMPORT_LIBRARY_SUFFIX}')
+else
+  cmake_config.set('HB_LIB_PREFIX', '${CMAKE_SHARED_LIBRARY_PREFIX}')
+  cmake_config.set('HB_LIB_SUFFIX', '${CMAKE_SHARED_LIBRARY_SUFFIX}.@0@'.format(version))
+endif
+
+configure_file(input: 'harfbuzz-config.cmake.in',
+  output: 'harfbuzz-config.cmake',
+  configuration: cmake_config,
+  install_dir: cmake_config_dir,
+)
+
+gobject_enums_c = []
+gobject_enums_h = []
+libharfbuzz_gobject_dep = null_dep
+if have_gobject
+  gnome = import('gnome')
+
+  h_templ = configure_file(
+    input: 'hb-gobject-enums.h.tmpl',
+    output: 'hb-gobject-enums-tmp.h.tmpl',
+    copy: true)
+
+  cc_templ = configure_file(
+    input: 'hb-gobject-enums.cc.tmpl',
+    output: 'hb-gobject-enums-tmp.cc.tmpl',
+    copy: true)
+
+  enums = gnome.mkenums('hb-gobject',
+    sources: hb_headers,
+    h_template: h_templ,
+    c_template: cc_templ,
+    identifier_prefix: 'hb_',
+    symbol_prefix: 'hb_gobject',
+  )
+
+  gobject_enums_c = custom_target('hb-gobject-enums.cc',
+    input: enums[0],
+    output: 'hb-gobject-enums.cc',
+    command: [find_program('fix_get_types.py'), '@INPUT@', '@OUTPUT@']
+  )
+
+  gobject_enums_h = custom_target('hb-gobject-enums.h',
+    input: enums[1],
+    output: 'hb-gobject-enums.h',
+    command: [find_program('fix_get_types.py'), '@INPUT@', '@OUTPUT@'],
+    install: true,
+    install_dir: get_option('prefix') / get_option('includedir') / meson.project_name(),
+  )
+
+  hb_gobject_sources += [gobject_enums_c]
+
+  harfbuzz_gobject_def = custom_target('harfbuzz-gobject.def',
+    command: gen_def_cmd,
+    input: [hb_gobject_headers, gobject_enums_h],
+    output: 'harfbuzz-gobject.def')
+  defs_list += [harfbuzz_gobject_def]
+
+  libharfbuzz_gobject = library('harfbuzz-gobject', [hb_gobject_sources, gobject_enums_c, gobject_enums_h],
+    include_directories: incconfig,
+    dependencies: [glib_dep, gobject_dep],
+    link_with: [libharfbuzz],
+    cpp_args: cpp_args + extra_hb_cpp_args,
+    soversion: hb_so_version,
+    version: version,
+    install: true,
+    darwin_versions: darwin_versions,
+    link_language: 'c',
+  )
+
+  gir = find_program('g-ir-scanner', required: get_option('introspection'))
+  build_gir = gir.found() and (not meson.is_cross_build() or get_option('introspection').enabled())
+
+  build_gir = build_gir and get_option('default_library') != 'static'
+  if not build_gir and get_option('introspection').enabled()
+    error('Introspection support is requested but the default library option should be shared or both')
+  endif
+
+  if build_gir
+    conf.set('HAVE_INTROSPECTION', 1)
+    hb_gen_files_gir = gnome.generate_gir([libharfbuzz_gobject, libharfbuzz],
+      sources: [gir_headers, gir_sources, gobject_enums_h],
+      dependencies: libharfbuzz_dep,
+      namespace: 'HarfBuzz',
+      nsversion: '0.0',
+      identifier_prefix: 'hb_',
+      symbol_prefix: ['hb', 'hb_gobject'],
+      includes: ['GObject-2.0', 'freetype2-2.0'],
+      export_packages: ['harfbuzz-gobject', 'harfbuzz'],
+      header: 'hb-gobject.h',
+      install: true,
+      extra_args:  ['--cflags-begin',
+                    '-DHB_NO_SINGLE_HEADER_ERROR',
+                    '-DHAVE_GOBJECT',
+                    '-DHB_EXTERN=',
+                    '--cflags-end'])
+  endif
+
+  libharfbuzz_gobject_dep = declare_dependency(
+    link_with: libharfbuzz_gobject,
+    include_directories: incsrc,
+    sources: build_gir ? hb_gen_files_gir : hb_gobject_sources,
+    dependencies: [glib_dep, gobject_dep])
+  meson.override_dependency('harfbuzz-gobject', libharfbuzz_gobject_dep)
+
+  pkgmod.generate(libharfbuzz_gobject,
+    description: 'HarfBuzz text shaping library GObject integration',
+    requires: ['harfbuzz = @0@'.format(meson.project_version()), 'glib-2.0', 'gobject-2.0'],
+    subdirs: [meson.project_name()],
+    version: meson.project_version(),
+  )
+
+  install_headers(hb_gobject_headers, subdir: meson.project_name())
+else
+  if get_option('introspection').enabled()
+    error('introspection requires gobject to be enabled')
+  endif
+endif
+
+if get_option('tests').enabled()
+  dist_check_script = [
+    'check-c-linkage-decls',
+    'check-externs',
+    'check-header-guards',
+    'check-includes',
+  ]
+
+  env = environment()
+  env.set('srcdir', meson.current_source_dir())
+  env.set('base_srcdir', meson.source_root())
+  env.set('builddir', meson.current_build_dir())
+  env.set('libs', meson.current_build_dir()) # TODO: Merge this with builddir after autotools removal
+  HBSOURCES = []
+  foreach f : hb_sources
+    HBSOURCES += '@0@'.format(f)
+  endforeach
+  env.set('HBSOURCES', ' '.join(HBSOURCES))
+  HBHEADERS = []
+  foreach f : hb_headers
+    HBHEADERS += '@0@'.format(f)
+  endforeach
+  env.set('HBHEADERS', ' '.join(HBHEADERS))
+
+  if cpp.get_argument_syntax() != 'msvc' and not meson.is_cross_build() # ensure the local tools are usable
+    dist_check_script += ['check-static-inits', 'check-symbols']
+    if get_option('wasm').disabled()
+      dist_check_script += ['check-libstdc++']
     endif
   endif
 
-  if found
-    harfbuzz_extra_deps += extra_deps
-    conf.set('HAVE_@0@'.format(name.to_upper()), 1)
-  endif
-endforeach
-
-# CMake support (package install dir)
-
-# Equivalent to configure_package_config_file(INSTALL_DESTINATION ...), see
-# https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#command:configure_package_config_file.
-# In certain unusual packaging layouts such as Nixpkgs, the Harfbuzz package
-# is installed into two Nix store paths, "out" and "dev", where "out" contains
-# libraries only (i.e. lib/libharfbuzz.so) and "dev" contains development
-# files, i.e. include and lib/cmake. If CMake package files are installed to
-# "out", Nixpkgs will move them to "dev", which breaks assumptions about
-# our file paths. Since we need to figure out relative install paths here
-# to make a relocatable package, we do need to know the final path of our
-# CMake files to calculate the correct relative paths.
-# Of course, this still defaults to $libdir/cmake if unset, which works for
-# most packaging layouts.
-cmake_package_install_dir = get_option('cmakepackagedir')
-
-if cmake_package_install_dir == ''
-  cmake_package_install_dir = get_option('libdir') / 'cmake'
+  foreach name : dist_check_script
+    test(name, find_program(name + '.py'),
+      env: env,
+      depends: name == 'check-symbols' ? defs_list : [],
+      suite: ['src'],
+    )
+  endforeach
 endif
 
-subdir('src')
-
-if not get_option('utilities').disabled()
-  subdir('util')
-endif
-
-if not get_option('tests').disabled()
-  subdir('test')
-endif
-
-if not get_option('benchmark').disabled()
-  subdir('perf')
-endif
-
-if not get_option('docs').disabled()
-  subdir('docs')
-endif
-
-configure_file(output: 'config.h', configuration: conf)
-
-alias_target('lib', libharfbuzz)
-alias_target('libs', libharfbuzz, libharfbuzz_subset)
-
-build_summary = {
-  'Directories':
-    {'prefix': get_option('prefix'),
-     'bindir': get_option('bindir'),
-     'libdir': get_option('libdir'),
-     'includedir': get_option('includedir'),
-     'datadir': get_option('datadir'),
-     'cmakepackagedir': cmake_package_install_dir
-    },
-  'Unicode callbacks (you want at least one)':
-    {'Builtin': true,
-     'Glib': conf.get('HAVE_GLIB', 0) == 1,
-     'ICU': conf.get('HAVE_ICU', 0) == 1,
-    },
-  'Font callbacks (the more the merrier)':
-    {'Builtin' : true,
-     'FreeType': conf.get('HAVE_FREETYPE', 0) == 1,
-    },
-  'Dependencies used for command-line utilities':
-    {'Cairo': conf.get('HAVE_CAIRO', 0) == 1,
-     'Chafa': conf.get('HAVE_CHAFA', 0) == 1,
-    },
-  'Additional shapers':
-    {'Graphite2': conf.get('HAVE_GRAPHITE2', 0) == 1,
-     'WebAssembly (experimental)': conf.get('HAVE_WASM', 0) == 1,
-    },
-  'Platform shapers (not normally needed)':
-    {'CoreText': conf.get('HAVE_CORETEXT', 0) == 1,
-     'DirectWrite (experimental)': conf.get('HAVE_DIRECTWRITE', 0) == 1,
-     'GDI/Uniscribe': (conf.get('HAVE_GDI', 0) == 1) and (conf.get('HAVE_UNISCRIBE', 0) == 1),
-    },
-  'Other features':
-    {'Documentation': conf.get('HAVE_GTK_DOC', 0) == 1,
-     'GObject bindings': conf.get('HAVE_GOBJECT', 0) == 1,
-     'Cairo integration': conf.get('HAVE_CAIRO', 0) == 1,
-     'Introspection': conf.get('HAVE_INTROSPECTION', 0) == 1,
-     'Experimental APIs': conf.get('HB_EXPERIMENTAL_API', 0) == 1,
-    },
-  'Testing':
-    {'Tests': get_option('tests').enabled(),
-     'Benchmark': get_option('benchmark').enabled(),
-    },
-}
-foreach section_title, section : build_summary
-  summary(section, bool_yn: true, section: section_title)
-endforeach
+install_headers(hb_headers + hb_subset_headers, subdir: meson.project_name())
