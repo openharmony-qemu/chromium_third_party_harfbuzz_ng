@@ -203,6 +203,18 @@ hb_subset_input_set_axis_range (hb_subset_input_t  *input,
 				float               axis_max_value,
 				float               axis_def_value);
 
+HB_EXTERN hb_bool_t
+hb_subset_axis_range_from_string (const char *str, int len,
+				  float *axis_min_value,
+				  float *axis_max_value,
+				  float *axis_def_value);
+
+HB_EXTERN void
+hb_subset_axis_range_to_string (hb_subset_input_t *input,
+				hb_tag_t axis_tag,
+				char *buf,
+				unsigned size);
+
 #ifdef HB_EXPERIMENTAL_API
 HB_EXTERN hb_bool_t
 hb_subset_input_override_name_table (hb_subset_input_t  *input,
@@ -212,6 +224,24 @@ hb_subset_input_override_name_table (hb_subset_input_t  *input,
 				     unsigned            language_id,
 				     const char         *name_str,
 				     int                 str_len);
+
+
+                                     
+/*
+* Raw outline data access
+*/
+
+HB_EXTERN hb_blob_t*
+hb_subset_cff_get_charstring_data (hb_face_t* face, hb_codepoint_t glyph_index);
+
+HB_EXTERN hb_blob_t*
+hb_subset_cff_get_charstrings_index (hb_face_t* face);
+
+HB_EXTERN hb_blob_t*
+hb_subset_cff2_get_charstring_data (hb_face_t* face, hb_codepoint_t glyph_index);
+
+HB_EXTERN hb_blob_t*
+hb_subset_cff2_get_charstrings_index (hb_face_t* face);
 #endif
 
 HB_EXTERN hb_face_t *
